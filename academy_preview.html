@@ -1,0 +1,178 @@
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#0B0D12;
+    --surface:rgba(22,25,34,0.55);
+    --surface-solid:#161922;
+    --border:rgba(255,255,255,0.08);
+    --violet:#7C5CFF;
+    --cyan:#29D9C8;
+    --amber:#FFB347;
+    --text:#E8E9ED;
+    --muted:#8A90A0;
+  }
+  *{box-sizing:border-box;}
+  body{margin:0;background:var(--bg);color:var(--text);font-family:'Inter',sans-serif;}
+  .wrap{max-width:1100px;margin:0 auto;padding:56px 24px 80px;position:relative;}
+
+  .bg-glow{position:fixed;inset:0;pointer-events:none;z-index:0;
+    background:
+      radial-gradient(600px 400px at 15% 10%, rgba(124,92,255,0.14), transparent 60%),
+      radial-gradient(500px 380px at 90% 30%, rgba(41,217,200,0.10), transparent 60%);
+  }
+
+  .eyebrow{font-family:'JetBrains Mono',monospace;color:var(--cyan);font-size:12px;letter-spacing:0.14em;text-transform:uppercase;margin-bottom:14px;}
+  h1{font-family:'Space Grotesk',sans-serif;font-size:44px;line-height:1.08;margin:0 0 16px;font-weight:700;
+     background:linear-gradient(120deg, #fff 40%, var(--violet));
+     -webkit-background-clip:text;background-clip:text;color:transparent;}
+  .sub{color:var(--muted);font-size:16px;line-height:1.6;max-width:620px;margin-bottom:48px;}
+
+  .board{position:relative;z-index:1;}
+
+  .ladder{position:relative;display:flex;flex-direction:column;gap:0;}
+  .step{
+    display:grid;grid-template-columns:64px 1fr;gap:20px;align-items:stretch;
+    padding:0 0 0 0;position:relative;cursor:pointer;
+  }
+  .step:not(:last-child) .rail{position:absolute;left:31px;top:64px;bottom:-8px;width:2px;background:linear-gradient(var(--border), transparent);}
+  .node-col{display:flex;flex-direction:column;align-items:center;padding-top:6px;}
+  .node{
+    width:44px;height:44px;border-radius:50%;
+    display:flex;align-items:center;justify-content:center;
+    font-family:'JetBrains Mono',monospace;font-size:13px;font-weight:600;
+    background:var(--surface-solid);border:1px solid var(--border);color:var(--muted);
+    transition:all .25s ease;flex-shrink:0;
+  }
+  .step.active .node{border-color:var(--violet);color:#fff;background:radial-gradient(circle at 30% 30%, var(--violet), #4b34a8);
+    box-shadow:0 0 0 4px rgba(124,92,255,0.15), 0 0 24px rgba(124,92,255,0.35);}
+  .step.done .node{border-color:var(--cyan);color:var(--cyan);}
+
+  .card{
+    margin:10px 0 26px;padding:20px 22px;border-radius:16px;
+    background:var(--surface);border:1px solid var(--border);
+    backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);
+    transition:border-color .2s ease, transform .2s ease;
+  }
+  .step:hover .card{border-color:rgba(124,92,255,0.35);}
+  .step.active .card{border-color:var(--violet);}
+
+  .card-top{display:flex;align-items:baseline;justify-content:space-between;gap:12px;flex-wrap:wrap;}
+  .stage-tag{font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--violet);letter-spacing:0.08em;}
+  .stage-title{font-family:'Space Grotesk',sans-serif;font-size:20px;font-weight:600;margin:4px 0 8px;}
+  .stage-q{color:var(--muted);font-size:14px;font-style:italic;margin-bottom:10px;}
+  .stage-desc{color:#c7cad4;font-size:14px;line-height:1.6;max-height:0;overflow:hidden;opacity:0;transition:max-height .35s ease, opacity .3s ease, margin .3s ease;}
+  .step.active .stage-desc{max-height:400px;opacity:1;margin-top:6px;}
+
+  .file-pill{display:inline-flex;align-items:center;gap:6px;margin-top:14px;font-family:'JetBrains Mono',monospace;font-size:12px;color:var(--cyan);
+    background:rgba(41,217,200,0.08);border:1px solid rgba(41,217,200,0.25);padding:6px 10px;border-radius:8px;}
+
+  .flagship{display:inline-block;margin-left:8px;font-size:11px;color:var(--amber);border:1px solid rgba(255,179,71,0.4);padding:2px 8px;border-radius:20px;background:rgba(255,179,71,0.08);}
+
+  .checklist{margin:10px 0 0;padding:0;list-style:none;font-size:13px;color:var(--muted);}
+  .checklist li{padding:3px 0;}
+  .checklist li::before{content:"— ";color:var(--violet);}
+
+  .footer-note{margin-top:20px;padding-top:20px;border-top:1px solid var(--border);color:var(--muted);font-size:13px;line-height:1.6;}
+  .footer-note b{color:var(--text);}
+</style>
+
+<div class="bg-glow"></div>
+<div class="wrap">
+  <div class="eyebrow">Esports Academy — Roadmap Preview</div>
+  <h1>One ladder. Six stages.<br/>Every rank, mapped.</h1>
+  <p class="sub">Six universal stages take a learner from first install to professional career — with Valorant built out as the flagship, rank-by-rank example. Click a stage to preview its guide.</p>
+
+  <div class="board ladder" id="ladder"></div>
+</div>
+
+<script>
+const stages = [
+  {
+    tag: "STAGE 1",
+    title: "Beginner Foundations",
+    q: "Can I play this well enough to enjoy it?",
+    desc: "Choosing a first game, PC and peripheral setup, FPS optimization, DPI and sensitivity, and the mental starting line — expecting to lose a lot early, and why that's normal.",
+    file: "01-beginner-foundations.md",
+    checklist: ["Stable connection under 40ms", "Sensitivity locked for 2+ weeks", "A pre-set session-end rule"]
+  },
+  {
+    tag: "STAGE 2",
+    title: "Learning to Improve",
+    q: "Am I practicing the right way?",
+    desc: "Deliberate practice vs. mindless reps, mechanics vs. game sense, self-review without a coach, building a sustainable weekly routine.",
+    file: "02-learning-to-improve.md",
+    checklist: ["Weekly routine: drills + play + review", "A running \u201cnext time I will\u2026\u201d log", "One honored rest day per week"]
+  },
+  {
+    tag: "STAGE 3",
+    title: "Ranked Improvement",
+    q: "Iron \u2192 Radiant, rank by rank?",
+    flagship: true,
+    desc: "The flagship guide: nine rank bands from Iron to Radiant, each with its own bottleneck diagnosis, one focused drill, and a graduation checklist. Built first for Valorant — same template for every future game.",
+    file: "03-valorant-ranked-guide.md",
+    checklist: ["Crosshair placement & trades (Iron\u2013Silver)", "Consistency & economy (Gold\u2013Diamond)", "Adaptation & clutch precision (Asc.\u2013Radiant)"]
+  },
+  {
+    tag: "STAGE 4",
+    title: "Becoming Competitive",
+    q: "Do I have a team, and can we compete?",
+    desc: "Finding teammates, building chemistry through scrims, entering amateur tournaments, tournament etiquette, and running a team-level post-match review.",
+    file: "04-becoming-competitive.md",
+    checklist: ["Team scrimmed together 8\u201310+ times", "Completed a bracket tournament", "Repeatable post-match review process"]
+  },
+  {
+    tag: "STAGE 5",
+    title: "Going Professional",
+    q: "Could this be a career, even if I'm not #1?",
+    desc: "Building a portfolio and highlight reel, contacting organizations, understanding contracts, finding a coach, streaming as a parallel track, and realistic expectations on salary, travel, and taxes.",
+    file: "05-going-professional.md",
+    checklist: ["Portfolio with results + reviewed reel", "At least one org outreach or tryout", "Understands contract basics before signing"]
+  },
+  {
+    tag: "STAGE 6",
+    title: "Careers in Esports",
+    q: "What else exists if I'm not going pro?",
+    desc: "Eighteen career paths — Coach, Analyst, Team Manager, Broadcast Talent, Observer, Content Creator, AI Engineer, Data Analyst, and more — each with required skills and a starter-portfolio example.",
+    file: "06-esports-careers.md",
+    checklist: ["1\u20132 career lanes identified", "A small portfolio piece started", "One real community connection made"]
+  }
+];
+
+const ladder = document.getElementById('ladder');
+let activeIndex = 2; // open Stage 3 (flagship) by default
+
+function render(){
+  ladder.innerHTML = '';
+  stages.forEach((s, i) => {
+    const step = document.createElement('div');
+    step.className = 'step' + (i === activeIndex ? ' active' : (i < activeIndex ? ' done' : ''));
+    step.innerHTML = `
+      ${i < stages.length - 1 ? '<div class="rail"></div>' : ''}
+      <div class="node-col"><div class="node">${i+1}</div></div>
+      <div class="card">
+        <div class="card-top">
+          <div>
+            <span class="stage-tag">${s.tag}</span>${s.flagship ? '<span class="flagship">FLAGSHIP \u2014 VALORANT</span>' : ''}
+            <div class="stage-title">${s.title}</div>
+          </div>
+        </div>
+        <div class="stage-q">\u201c${s.q}\u201d</div>
+        <div class="stage-desc">
+          <p>${s.desc}</p>
+          <ul class="checklist">${s.checklist.map(c => `<li>${c}</li>`).join('')}</ul>
+          <div class="file-pill">&#8618; ${s.file}</div>
+        </div>
+      </div>
+    `;
+    step.addEventListener('click', () => { activeIndex = i; render(); });
+    ladder.appendChild(step);
+  });
+
+  const note = document.createElement('div');
+  note.className = 'footer-note';
+  note.innerHTML = `<b>All 7 guides are provided as real markdown files</b> alongside this preview \u2014 the roadmap overview plus one full guide per stage. Stage 3 (Ranked Improvement) is the only game-specific stage; Counter-Strike 2, Overwatch 2, and the rest reuse this same nine-band template next.`;
+  ladder.appendChild(note);
+}
+render();
+</script>
